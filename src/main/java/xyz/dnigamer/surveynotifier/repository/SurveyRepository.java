@@ -6,4 +6,5 @@ import xyz.dnigamer.surveynotifier.entity.Survey;
 
 @Repository
 public interface SurveyRepository extends JpaRepository<Survey, Long> {
+    boolean existsBySurveyLink(String surveyLink);
 }

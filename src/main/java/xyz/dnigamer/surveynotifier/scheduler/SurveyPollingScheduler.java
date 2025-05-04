@@ -26,7 +26,7 @@ public class SurveyPollingScheduler {
     private AuthenticationService authenticationService;
 
     // Run every 5 minutes
-    @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 * * * * *")
     public void fetchAndSaveSurveys() {
         try {
             System.out.println("Fetching surveys...");
@@ -45,12 +45,16 @@ public class SurveyPollingScheduler {
 
             // Save each survey to the database
             for (Map<String, String> surveyData : surveyDataList) {
+                String surveyLink = surveyData.get("surveyLink");
+                if (surveyRepository.existsBySurveyLink(surveyLink)) {
+                    continue;
+                }
                 Survey survey = new Survey();
                 survey.setValue(surveyData.get("value"));
                 survey.setCurrency(surveyData.get("currency"));
                 survey.setDuration(surveyData.get("duration"));
                 survey.setClosingDate(surveyData.get("closingDate"));
-                survey.setSurveyLink(surveyData.get("surveyLink"));
+                survey.setSurveyLink(surveyLink);
                 surveyRepository.save(survey);
             }
 
