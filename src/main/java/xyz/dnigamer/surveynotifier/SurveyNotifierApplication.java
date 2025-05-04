@@ -9,6 +9,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class SurveyNotifierApplication {
 
+    public static final Long START_TIME = System.currentTimeMillis();
+
     public static void main(String[] args) {
         Dotenv dotenv = Dotenv.load();
         System.setProperty("DISCORD_TOKEN", dotenv.get("DISCORD_TOKEN"));
