@@ -23,6 +23,7 @@ dependencies {
     }
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.jsoup:jsoup:1.20.1'
+    implementation 'io.lettuce:lettuce-core:6.6.0.RELEASE'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'io.github.cdimascio:dotenv-java:3.2.0'
