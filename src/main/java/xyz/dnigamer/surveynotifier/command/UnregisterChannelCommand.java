@@ -4,6 +4,8 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import org.springframework.stereotype.Component;
 import xyz.dnigamer.surveynotifier.repository.ChannelRepository;
 
+import java.util.Objects;
+
 @Component
 public class UnregisterChannelCommand {
     private final ChannelRepository channelRepository;
@@ -19,7 +21,11 @@ public class UnregisterChannelCommand {
                 return;
             }
 
+            // Get the channel ID from the event if provided or use the current channel
             String channelId = event.getChannel().getId();
+            if (event.getOption("channel") != null) {
+                channelId = Objects.requireNonNull(event.getOption("channel")).getAsString();
+            }
 
             // Check if the channel exists
             if (!channelRepository.existsByChannelId(channelId)) {

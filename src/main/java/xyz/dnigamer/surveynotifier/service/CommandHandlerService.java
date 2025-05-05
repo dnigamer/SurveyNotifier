@@ -25,11 +25,14 @@ public class CommandHandlerService {
         String commandName = event.getName();
 
         switch (commandName) {
-            case "ping" -> event.reply("Pong!").queue();
             case "register" -> registerChannelCommand.execute(event);
             case "unregister" -> unregisterChannelCommand.execute(event);
+            case "list" -> event.reply("List command is not implemented yet!").setEphemeral(true).queue();
             case "status" -> statusCommand.execute(event);
             case "database" -> event.reply("Database command is not implemented yet!").setEphemeral(true).queue();
+            case "config" -> event.reply("Config command is not implemented yet!").setEphemeral(true).queue();
+            case "survey-stats" ->
+                    event.reply("Survey stats command is not implemented yet!").setEphemeral(true).queue();
             default -> event.reply("Unknown command!").setEphemeral(true).queue();
         }
     }

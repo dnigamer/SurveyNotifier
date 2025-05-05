@@ -23,8 +23,13 @@ public class RegisterChannelCommand {
                 return;
             }
 
+            // Get the channel ID and name from the event if provided or use the current channel
             String channelId = event.getChannel().getId();
             String channelName = event.getChannel().getName();
+            if (event.getOption("channel") != null) {
+                channelId = Objects.requireNonNull(event.getOption("channel")).getAsString();
+                channelName = Objects.requireNonNull(Objects.requireNonNull(event.getGuild()).getTextChannelById(channelId)).getName();
+            }
             String guildId = Objects.requireNonNull(event.getGuild()).getId();
 
             // Check if the channel already exists
