@@ -20,6 +20,10 @@ public class UnregisterChannelCommand {
                 event.reply("This command can only be used in a server channel!").setEphemeral(true).queue();
                 return;
             }
+            if (!Objects.requireNonNull(event.getMember()).hasPermission(net.dv8tion.jda.api.Permission.MANAGE_CHANNEL)) {
+                event.reply("You do not have permission to use this command!").setEphemeral(true).queue();
+                return;
+            }
 
             // Get the channel ID from the event if provided or use the current channel
             String channelId = event.getChannel().getId();
