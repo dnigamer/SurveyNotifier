@@ -42,9 +42,7 @@ public class DiscordBotService extends ListenerAdapter {
                 Commands.slash("status", "Get the current status of the bot"),
                 Commands.slash("database", "Get the current status of the database"),
                 Commands.slash("config", "Get and set the bot configuration")
-                        .addOption(OptionType.INTEGER, "interval", "The interval in seconds for fetching new surveys", false),
-                Commands.slash("survey-stats", "Get survey statistics for the day")
-
+                        .addOption(OptionType.INTEGER, "interval", "The interval in seconds for fetching new surveys", false)
         ).queue();
     }
 

@@ -1,5 +1,6 @@
 package xyz.dnigamer.surveynotifier.scheduler;
 
+import jakarta.annotation.PostConstruct;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -8,12 +9,16 @@ import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 import xyz.dnigamer.surveynotifier.entity.Channel;
+import xyz.dnigamer.surveynotifier.entity.Config;
 import xyz.dnigamer.surveynotifier.entity.Notification;
 import xyz.dnigamer.surveynotifier.entity.Survey;
 import xyz.dnigamer.surveynotifier.repository.ChannelRepository;
+import xyz.dnigamer.surveynotifier.repository.ConfigRepository;
 import xyz.dnigamer.surveynotifier.repository.NotificationRepository;
 import xyz.dnigamer.surveynotifier.repository.SurveyRepository;
 import xyz.dnigamer.surveynotifier.service.AuthenticationService;
@@ -23,9 +28,57 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 
 @Component
 public class SurveyPollingScheduler {
+
+    @Value("${scheduler.default.cron:0 0/5 * * * *}") // Default cron expression (every 5 minutes)
+    private String defaultCronExpression;
+
+    private final ConfigRepository configRepository;
+
+    public SurveyPollingScheduler(ConfigRepository configRepository) {
+        this.configRepository = configRepository;
+    }
+
+    @PostConstruct
+    public void initializeScheduler() {
+        List<Config> configs = configRepository.findAll();
+        for (Config config : configs) {
+            String cronExpression = config.getCronExpression();
+            if (cronExpression == null || cronExpression.isEmpty()) {
+                cronExpression = defaultCronExpression;
+            }
+            startScheduler(cronExpression);
+        }
+    }
+
+    public void updateScheduler(String newCronExpression) {
+        stopScheduler();
+        startScheduler(newCronExpression);
+    }
+
+    @Autowired
+    private TaskScheduler taskScheduler;
+
+    private ScheduledFuture<?> scheduledTask;
+
+    public void startScheduler(String cronExpression) {
+        stopScheduler();
+        logger.debug("Starting the scheduler with cron expression: {}", cronExpression);
+        scheduledTask = taskScheduler.schedule(
+                this::fetchAndSaveSurveys,
+                new CronTrigger(cronExpression)
+        );
+    }
+
+    public void stopScheduler() {
+        if (scheduledTask != null) {
+            logger.debug("Stopping the scheduler...");
+            scheduledTask.cancel(true);
+        }
+    }
 
     @Autowired
     private SurveyParserService surveyParserService;
@@ -47,8 +100,6 @@ public class SurveyPollingScheduler {
 
     private final Logger logger = LoggerFactory.getLogger(SurveyPollingScheduler.class);
 
-    // Run every 5 minutes
-    @Scheduled(cron = "0 */5 * * * *")
     public void fetchAndSaveSurveys() {
         try {
             String token = authenticationService.getAuthToken();
@@ -64,7 +115,6 @@ public class SurveyPollingScheduler {
             // Parse the HTML to extract survey data
             List<Map<String, String>> surveyDataList = surveyParserService.parseSurveys(htmlResponse);
             if (surveyDataList.isEmpty()) {
-                logger.debug("No surveys found.");
                 List<Survey> surveys = surveyRepository.findAll();
                 deleteExistingNotifications(surveys);
                 return;
@@ -97,13 +147,7 @@ public class SurveyPollingScheduler {
             // Notify the user about new surveys
             if (!newSurveys.isEmpty()) {
                 sendNotificationToChannels(newSurveys);
-                logger.debug("New surveys found: {}", newSurveys);
-            } else {
-                logger.debug("No new surveys found.");
             }
-
-            // Log the number of surveys saved
-            logger.debug("Total surveys saved: {}", surveyRepository.count());
         } catch (Exception e) {
             logger.error("Error fetching surveys: {}", e.getMessage());
             // TODO: Implement error handling and notification

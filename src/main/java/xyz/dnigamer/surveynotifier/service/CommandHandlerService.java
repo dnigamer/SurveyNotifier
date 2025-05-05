@@ -12,17 +12,20 @@ public class CommandHandlerService {
     private final StatusCommand statusCommand;
     private final ListCommand listCommand;
     private final DatabaseCommand databaseCommand;
+    private final ConfigCommand configCommand;
 
     public CommandHandlerService(RegisterChannelCommand registerChannelCommand,
                                  UnregisterChannelCommand unregisterChannelCommand,
                                     StatusCommand statusCommand,
                                     ListCommand listCommand,
-                                    DatabaseCommand databaseCommand) {
+                                    DatabaseCommand databaseCommand,
+                                    ConfigCommand configCommand) {
         this.registerChannelCommand = registerChannelCommand;
         this.unregisterChannelCommand = unregisterChannelCommand;
         this.statusCommand = statusCommand;
         this.listCommand = listCommand;
         this.databaseCommand = databaseCommand;
+        this.configCommand = configCommand;
     }
 
     public void handleSlashCommand(SlashCommandInteractionEvent event) {
@@ -34,9 +37,7 @@ public class CommandHandlerService {
             case "list" -> listCommand.execute(event);
             case "status" -> statusCommand.execute(event);
             case "database" -> databaseCommand.execute(event);
-            case "config" -> event.reply("Config command is not implemented yet!").setEphemeral(true).queue();
-            case "survey-stats" ->
-                    event.reply("Survey stats command is not implemented yet!").setEphemeral(true).queue();
+            case "config" -> configCommand.execute(event);
             default -> event.reply("Unknown command!").setEphemeral(true).queue();
         }
     }
