@@ -48,7 +48,7 @@ public class SurveyPollingScheduler {
     private final Logger logger = LoggerFactory.getLogger(SurveyPollingScheduler.class);
 
     // Run every 5 minutes
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     public void fetchAndSaveSurveys() {
         try {
             String token = authenticationService.getAuthToken();
@@ -65,6 +65,8 @@ public class SurveyPollingScheduler {
             List<Map<String, String>> surveyDataList = surveyParserService.parseSurveys(htmlResponse);
             if (surveyDataList.isEmpty()) {
                 logger.debug("No surveys found.");
+                List<Survey> surveys = surveyRepository.findAll();
+                deleteExistingNotifications(surveys);
                 return;
             }
 
@@ -90,17 +92,7 @@ public class SurveyPollingScheduler {
             List<Survey> surveysToDelete = surveyRepository.findAllBySurveyLinkNotIn(surveyDataList.stream()
                     .map(data -> data.get("surveyLink"))
                     .toList());
-            for (Survey survey : surveysToDelete) {
-                List<Notification> notifications = notificationRepository.findAllBySurveyAndIsActiveTrue(survey);
-                for (Notification notification : notifications) {
-                    TextChannel textChannel = jdaBuilder.build().awaitReady().getTextChannelById(notification.getChannelId());
-                    if (textChannel != null) {
-                        textChannel.deleteMessageById(notification.getMessageId()).queue();
-                        notification.setActive(false);
-                        notificationRepository.save(notification);
-                    }
-                }
-            }
+            deleteExistingNotifications(surveysToDelete);
 
             // Notify the user about new surveys
             if (!newSurveys.isEmpty()) {
@@ -115,6 +107,20 @@ public class SurveyPollingScheduler {
         } catch (Exception e) {
             logger.error("Error fetching surveys: {}", e.getMessage());
             // TODO: Implement error handling and notification
+        }
+    }
+
+    private void deleteExistingNotifications(List<Survey> surveys) throws InterruptedException {
+        for (Survey survey : surveys) {
+            List<Notification> notifications = notificationRepository.findAllBySurveyAndIsActiveTrue(survey);
+            for (Notification notification : notifications) {
+                TextChannel textChannel = jdaBuilder.build().awaitReady().getTextChannelById(notification.getChannelId());
+                if (textChannel != null) {
+                    textChannel.deleteMessageById(notification.getMessageId()).queue();
+                    notification.setActive(false);
+                    notificationRepository.save(notification);
+                }
+            }
         }
     }
 
